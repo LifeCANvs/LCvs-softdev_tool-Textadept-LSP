@@ -216,7 +216,7 @@ local function scan(target)
 	log:debug('Read cache: #tags=%d #api=%d', #tags, #api)
 end
 
-local _HOME = os.getenv('TEXTADEPT_HOME') or (arg[-2] and arg[-2]:match('^.+[/\\]'))
+local _HOME = os.getenv('TEXTADEPT_HOME') or (arg[-2] and arg[-2]:match('^(.+)[/\\]'))
 local scanned_textadept = false
 -- LSP textDocument/didOpen notification.
 register('textDocument/didOpen', function(params)
@@ -260,7 +260,7 @@ register('textDocument/didChange', function(params)
 	log:debug('Preparing to scan: %s (relative path=%s)', tofilename(params.textDocument.uri),
 		filename)
 	local path = tmpdir .. '/' .. filename
-	pl_dir.makepath(path:match('^.+[/\\]'))
+	pl_dir.makepath(path:match('^(.+)[/\\]'))
 	log:debug('Creating temporary file: %s', filename)
 	io.open(path, 'wb'):write(params.contentChanges[1].text):close()
 	scan(tmpdir)
