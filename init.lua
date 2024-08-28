@@ -1361,8 +1361,8 @@ if arg then
 	if not ta:find('%-curses$') then ta = ta:gsub('%-gtk$', '') .. '-curses' end -- run as background app
 	if WIN32 then ta = ta .. '.exe' end
 	if not lfs.attributes(ta) then ta = arg[0] end -- fallback
-	M.server_commands.lua = string.format('"%s" -L "%s"', lfs.abspath(ta), package.searchpath('lsp',
-		package.path):gsub('init%.lua$', 'server.lua'))
+	M.server_commands.lua = string.format('"%s" -L "%s" "%s"', lfs.abspath(ta), package.searchpath(
+		'lsp', package.path):gsub('init%.lua$', 'server.lua'), _USERHOME)
 end
 -- Save and restore Lua server command during reset since arg is nil.
 events.connect(events.RESET_BEFORE, function(persist) persist.lsp_lua = M.server_commands.lua end)

@@ -2,6 +2,7 @@
 -- Copyright 2023-2024 Mitchell. See LICENSE.
 
 --- Simple Lua language server for developing with Lua and Textadept.
+-- @usage /path/to/textadept -L /path/to/server.lua /path/to/userhome
 -- @module lsp.server
 
 local WIN32 = package.path:find('\\')
@@ -11,7 +12,7 @@ local dir = arg[0]:match('^(.+)[/\\]') or '.'
 lfs.chdir(dir) -- cd to this directory
 local ldoc = arg[-2] and string.format('"%s" -L "%s/ldoc.lua"', arg[-2], dir) or 'ldoc'
 package.path = string.format('%s/?.lua;%s/?/init.lua;%s', dir, dir, package.path)
-local userhome = os.getenv(not WIN32 and 'HOME' or 'USERPROFILE') .. '/.textadept'
+local userhome = arg[1]
 local logfile = userhome .. '/lua_lsp_server.log'
 io.open(logfile, 'w'):close() -- clear previous log
 
