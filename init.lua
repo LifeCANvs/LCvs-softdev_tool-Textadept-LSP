@@ -844,7 +844,7 @@ textadept.editing.autocompleters.lsp = function()
 			label = symbol.filterText or symbol.label
 			snippets[label] = symbol.insertText
 		end
-		-- TODO: some labels can have spaces and need proper handling.
+		if label:find(' ') then buffer.auto_c_separator = string.byte('\n') end
 		if symbol.kind and xpm_map[symbol.kind] > 0 then
 			symbols[#symbols + 1] = string.format('%s?%d', label, xpm_map[symbol.kind]) -- TODO: auto_c_type_separator
 		else
