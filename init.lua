@@ -1070,34 +1070,33 @@ function M.find_references()
 	local before, after = line:sub(1, pos - 1), line:sub(pos)
 	local symbol = before:match('[%w_]*$') .. after:match('^[%w_]*') -- TODO: lang-specific chars
 	local root = io.get_project_root()
-	ui.print_to(_L['[Files Found Buffer]'],
-		string.format('%s: %s\n%s %s', _L['Find References']:gsub('[_&]', ''), symbol, _L['Directory:'],
-			root))
-	buffer.indicator_current = ui.find.INDIC_FIND
 
-	local orig_buffer, buffer = buffer, buffer.new()
-	view:goto_buffer(orig_buffer)
+	local function print(message) ui.print_to(_L['[Files Found Buffer]'], message) end
+	print(string.format('%s: %s\n%s %s', _L['Find References']:gsub('[_&]', ''), symbol,
+		_L['Directory:'], root))
+
+	local ff_buffer, buffer = buffer, buffer.new()
+	view:goto_buffer(ff_buffer)
 	for _, location in ipairs(locations) do
 		local filename = tofilename(location.uri)
-		local f = io.open(filename, 'rb')
+		local f<close> = io.open(filename, 'rb')
 		buffer:target_whole_document()
 		buffer:replace_target(f:read('a'))
-		f:close()
 		if filename:sub(1, #root) == root then filename = filename:sub(#root + 2) end
 		local line_num = location.range.start.line + 1
-		line = buffer:get_line(line_num)
-		_G.buffer:add_text(string.format('%s:%d:%s', filename, line_num, line))
-		local pos = _G.buffer.current_pos - #line + location.range.start.character
-		_G.buffer:indicator_fill_range(pos,
+		line = buffer:get_line(line_num):match('^[^\r\n]*')
+		print(string.format('%s:%d:%s', filename, line_num, line))
+		local pos = ff_buffer.line_end_position[ff_buffer.line_count - 1] - #line +
+			location.range.start.character
+		ff_buffer.indicator_current = ui.find.INDIC_FIND
+		ff_buffer:indicator_fill_range(pos,
 			location.range['end'].character - location.range.start.character)
-		if not line:find('\n$') then _G.buffer:add_text('\n') end
 		buffer:clear_all()
 		buffer:empty_undo_buffer()
 		view:scroll_caret() -- [Files Found Buffer]
 	end
 	buffer:close(true) -- temporary buffer
-	_G.buffer:new_line()
-	_G.buffer:set_save_point()
+	print() -- blank line
 end
 
 --- Selects or expands the selection around the current position.
