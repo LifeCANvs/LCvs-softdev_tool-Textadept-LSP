@@ -9,7 +9,7 @@ teardown(function()
 	if buffer._type == '[LSP]' then test.log('lsp log:\n\t', buffer:get_text():gsub('\n', '\n\t')) end
 end)
 
-local have_clangd = LINUX or OSX and os.getenv('CI') == ''
+local have_clangd = LINUX or OSX and not os.getenv('CI')
 
 local clangd_project = {
 	['.hg'] = {}, --
@@ -95,7 +95,7 @@ test('lsp should start when opening a project file', function()
 	test.wait(function() return buffer._type == '[LSP]' end)
 	test.assert_contains(buffer:get_text(), 'Starting language server: clangd')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.goto_symbol should prompt to jump to a symbol in the current file', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -111,7 +111,7 @@ test('lsp.goto_symbol should prompt to jump to a symbol in the current file', fu
 	test.assert_equal(buffer:line_from_position(buffer.selection_start), 4)
 	test.assert_contains(buffer:get_sel_text(), 'main()')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.autocomplete should show a list of completions', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -128,7 +128,7 @@ test('lsp.autocomplete should show a list of completions', function()
 		return auto_c_show.called and auto_c_show.args[3]:find('append')
 	end)
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.hover should show a calltip with information for the current symbol', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -145,7 +145,7 @@ test('lsp.hover should show a calltip with information for the current symbol', 
 	test.assert_equal(call_tip_show.called, true)
 	test.assert_contains(call_tip_show.args[3], 'printf')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.signature_help should show a calltip for the current function', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -162,7 +162,7 @@ test('lsp.signature_help should show a calltip for the current function', functi
 	test.assert_equal(call_tip_show.called, true)
 	test.assert_contains(call_tip_show.args[3], 'Foo')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.signature_help should cycle through calltips', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -186,7 +186,7 @@ test('lsp.signature_help should cycle through calltips', function()
 	textadept.menu.menubar['Tools/Language Server/Show Documentation'][2]()
 	test.assert(call_tip_show.args[3] ~= calltip, 'did not cycle calltip')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 if OSX then skip('calltip click is not implemented in Qt on macOS') end
 
 test('lsp.goto_definition should jump to the definition of the current symbol', function()
@@ -202,7 +202,7 @@ test('lsp.goto_definition should jump to the definition of the current symbol', 
 	test.assert_equal(buffer:line_from_position(buffer.current_pos), 3)
 	test.assert_equal(buffer:get_sel_text(), 'Foo')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.find_references should list project references for the current symbol', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -217,7 +217,7 @@ test('lsp.find_references should list project references for the current symbol'
 	local highlights = test.get_indicated_text(ui.find.INDIC_FIND)
 	test.assert_contains(highlights, 'bar')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.select should expand the selection around the current position', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -234,7 +234,7 @@ test('lsp.select should expand the selection around the current position', funct
 	test.assert_equal(first_selection, '"%s\\n"')
 	test.assert_equal(second_selection, 'printf("%s\\n", foo.bar().c_str())')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lsp.select_all_symbol should select all instances of the current symbol', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -249,7 +249,7 @@ test('lsp.select_all_symbol should select all instances of the current symbol', 
 	test.assert_equal(buffer:get_sel_text(), 'foofoo') -- Scintilla stores it this way
 end)
 expected_failure('clangd does not support this yet')
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('typing should trigger lsp.autocomplete', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -266,7 +266,7 @@ test('typing should trigger lsp.autocomplete', function()
 
 	test.assert_equal(autocomplete.called, true)
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('hovering should trigger lsp.hover', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -286,7 +286,7 @@ test('hovering should trigger lsp.hover', function()
 	test.assert_equal(hover.called, true)
 	test.assert_equal(call_tip_cancel.called, true)
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('typing should trigger lsp.signature_help', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -304,7 +304,7 @@ test('typing should trigger lsp.signature_help', function()
 	test.assert_equal(call_tip_show.called, true)
 	test.assert_contains(call_tip_show.args[3], 'Foo')
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test("typing ')' should cancel signature help", function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
@@ -325,7 +325,7 @@ test("typing ')' should cancel signature help", function()
 
 	test.assert_equal(call_tip_cancel.called, true)
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
 
 test('lua lsp should work for untitled buffers', function()
 	buffer:set_lexer('lua')
@@ -376,4 +376,4 @@ test('lsp menu should allow manually starting and stopping an lsp server', funct
 	test.assert_equal(already_running_message.called, true)
 	test.assert_equal(confirm_stop.called, true)
 end)
-if have_clangd then skip('clangd is not available') end
+if not have_clangd then skip('clangd is not available') end
