@@ -338,8 +338,35 @@ test('lua lsp should work for untitled buffers', function()
 
 	test.type('string.byte(')
 
-	lsp.stop()
 	test.assert_equal(auto_c_show.called, true)
+	test.assert_equal(call_tip_show.called, true)
+end)
+
+test('lua lsp should recognize M as the current module', function()
+	local _<close> = test.tmpfile('.lua', [[
+--- @module name
+local M = {}
+
+--- Field.
+M.field = ''
+
+--- Func.
+function M.func() end
+]], true)
+	lsp.start()
+	buffer:document_end()
+
+	local auto_c_show = test.stub()
+	local _<close> = test.mock(buffer, 'auto_c_show', auto_c_show)
+	local call_tip_show = test.stub()
+	local _<close> = test.mock(view, 'call_tip_show', call_tip_show)
+
+	test.type('name.func(')
+
+	test.assert_equal(auto_c_show.called, true)
+	local completions = auto_c_show.args[3]
+	test.assert_contains(completions, 'field')
+	test.assert_contains(completions, 'func')
 	test.assert_equal(call_tip_show.called, true)
 end)
 

@@ -269,6 +269,24 @@ register('textDocument/didChange', function(params)
 	pl_dir.rmtree(tmpdir)
 end)
 
+--- Replaces the conventional 'M' in symbol *symbol* with the file's @module declaration,
+-- if possible.
+-- @param symbol Symbol name that starts with 'M'.
+-- @param params LSP params for the completion/signatureHelp/etc. request.
+-- @return substituted or original symbol
+local function substitute_M(symbol, params)
+	local lines = files[params.textDocument.uri]
+	if not lines then return symbol end
+	for _, line in ipairs(lines) do
+		local module = line:match('^%s*%-%-%-?%s*@module%s([%w_.]+)')
+		if module then
+			log:debug('found module %s; using it instead of M', module)
+			return symbol:gsub('^M', module)
+		end
+	end
+	return symbol
+end
+
 --- Map of expression patterns to their types.
 -- Used for type-hinting when showing autocompletions for variables. Expressions are expected
 -- to match after the '=' sign of a statement.
@@ -293,6 +311,8 @@ register('textDocument/completion', function(params)
 		symbol, op, part)
 	if symbol == '' and part == '' then return json.null end -- nothing to complete
 	symbol, part = symbol:gsub('^_G%.?', ''), part ~= '_G' and part or ''
+	-- Replace conventional M with its @module declaration if possible.
+	if symbol == 'M' then symbol = substitute_M(symbol, params) end
 	-- Attempt to identify string type and file type symbols.
 	local assignment = '%f[%w_]' .. symbol:gsub('(%p)', '%%%1') .. '%s*=%s*(.*)$'
 	for i = line_num - 1, 1, -1 do
@@ -347,6 +367,7 @@ local function get_symbol(params)
 	local symbol_part_right = line:match('^[%w_]*', col_num)
 	local symbol_part_left = line:sub(1, col_num - 1):match('[%w_.:]*$')
 	local symbol = symbol_part_left .. symbol_part_right
+	if symbol:find('^M%.') then symbol = substitute_M(symbol, params) end
 	return symbol ~= '' and symbol or nil
 end
 
@@ -431,6 +452,7 @@ register('textDocument/signatureHelp', function(params)
 		goto retry
 	end
 	local func = text:sub(1, s - 1):match('[%w_.:]+$')
+	if func and func:find('^M%.') then func = substitute_M(func, params) end
 	if not func then return json.null end
 
 	-- Get its signature(s).
