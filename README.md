@@ -40,8 +40,9 @@ Textadept and restart.
 ## Lua Language Server
 
 This module comes with a simple Lua language server that starts up when Textadept opens a
-Lua file. The server looks in the project root for a *.lua-lsp* configuration file. That
-file can have the following fields:
+Lua file, or whenever you request documentation for a symbol in the Lua command entry. The
+server looks in the project root for a *.lua-lsp* configuration file. That file can have
+the following fields:
 
 - `ignore`: List of globs that match directories and files to ignore. Globs are relative to
 	the project root. The default directories ignored are .bzr, .git, .hg, .svn, _FOSSIL_,

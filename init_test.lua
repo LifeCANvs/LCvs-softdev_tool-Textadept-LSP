@@ -409,3 +409,19 @@ test('lsp menu should allow manually starting and stopping an lsp server', funct
 	test.assert_equal(confirm_stop.called, true)
 end)
 if not have_clangd then skip('clangd is not available') end
+
+test('Lua command entry should load and show Textadept documentation', function()
+	local call_tip_show = test.stub()
+	local _<close> = test.mock(ui.command_entry, 'call_tip_show', call_tip_show)
+	local call_tip_active = function() return call_tip_show.called end
+	local _<close> = test.mock(ui.command_entry, 'call_tip_active', call_tip_active)
+	rawset(ui.command_entry, 'active', true) -- note: cannot mock
+	local _<close> = test.defer(function() rawset(ui.command_entry, 'active', nil) end)
+	local _<close> = test.mock(ui.command_entry, 'lexer_language', 'lua')
+	ui.command_entry:set_text('auto_c_show')
+
+	textadept.menu.menubar['Tools/Language Server/Show Documentation'][2]()
+
+	test.assert_equal(call_tip_show.called, true)
+	test.assert_contains(call_tip_show.args[3], 'auto_c_show')
+end)

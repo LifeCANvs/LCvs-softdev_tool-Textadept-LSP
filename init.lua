@@ -42,8 +42,9 @@ local json = require('lsp.dkjson')
 -- ### Lua Language Server
 --
 -- This module comes with a simple Lua language server that starts up when Textadept opens a
--- Lua file. The server looks in the project root for a *.lua-lsp* configuration file. That
--- file can have the following fields:
+-- Lua file, or whenever you request documentation for a symbol in the Lua command entry. The
+-- server looks in the project root for a *.lua-lsp* configuration file. That file can have
+-- the following fields:
 --
 -- - `ignore`: List of globs that match directories and files to ignore. Globs are relative to
 --	the project root. The default directories ignored are .bzr, .git, .hg, .svn, _FOSSIL_,
@@ -84,6 +85,7 @@ if not rawget(_L, 'Language Server') then
 	_L['LSP server started'] = 'LSP server started'
 	_L['Unable to start LSP server'] = 'Unable to start LSP server'
 	_L['Note: completion list incomplete'] = 'Note: completion list incomplete'
+	_L['Loading Textadept documentation...'] = 'Loading Textadept documentation...'
 	_L['Showing diagnostics'] = 'Showing diagnostics'
 	_L['Hiding diagnostics'] = 'Hiding diagnostics'
 	-- Menu.
@@ -190,6 +192,7 @@ local servers = {}
 
 --- Map of LSP CompletionItemKinds to images used in autocompletion lists.
 -- @table xpm_map
+-- @local
 
 -- This separation is needed to prevent LDoc from parsing the following table.
 
@@ -1295,10 +1298,25 @@ for i = 1, #m_tools - 1 do
 						local buffer, view = buffer, view
 						if ui.command_entry.active then
 							_G.buffer, _G.view = ui.command_entry, ui.command_entry
+							if _G.buffer.lexer_language == 'lua' then
+								ui.statusbar_text = _L['Loading Textadept documentation...']
+								ui.update()
+								M.start()
+							end
+							local server = get_server()
+							if server then
+								-- Notify the server with a dummy file. The server will detect and scan _HOME
+								-- if it hasn't already.
+								server:notify('textDocument/didOpen', {
+									textDocument = {
+										uri = touri(_HOME .. '/dummy.lua'), languageId = 'lua', version = 0, text = ''
+									}
+								})
+							end
 						end
-						local cycle = view:call_tip_active()
+						local cycle = _G.view:call_tip_active()
 						if not cycle then M.hover() end
-						if not view:call_tip_active() or cycle then M.signature_help() end
+						if not _G.view:call_tip_active() or cycle then M.signature_help() end
 						if ui.command_entry.active then _G.buffer, _G.view = buffer, view end
 					end
 				}, --
