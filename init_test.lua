@@ -343,7 +343,10 @@ test('lua lsp should work for untitled buffers', function()
 end)
 
 test('lua lsp should recognize M as the current module', function()
-	local _<close> = test.tmpfile('.lua', [[
+	local file = 'file.lua'
+	local dir<close> = test.tmpdir{
+		['.hg'] = {}, --
+		[file] = [[
 --- @module name
 local M = {}
 
@@ -352,7 +355,9 @@ M.field = ''
 
 --- Func.
 function M.func() end
-]], true)
+]]
+	}
+	io.open_file(dir / file)
 	lsp.start()
 	buffer:document_end()
 
