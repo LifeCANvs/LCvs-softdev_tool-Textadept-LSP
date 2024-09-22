@@ -226,6 +226,7 @@ register('textDocument/didOpen', function(params)
 	files[params.textDocument.uri] = lines
 	log:debug('Cached the lines of %s', params.textDocument.uri)
 
+	-- Lazy-load Textadept API.
 	if params.textDocument.uri:find('[/\\]%.?textadept[/\\]') and not scanned_textadept and _HOME then
 		scanned_textadept = true
 		scan(_HOME)
@@ -560,7 +561,10 @@ while message.method ~= 'exit' do
 	end, message.params)
 	if result then respond(message.id, result) end
 	if message.method == 'initialize' then
-		if root then scan(root) end
+		if root then
+			scan(root)
+			if root == _HOME then scanned_textadept = true end -- optimization for local development
+		end
 		scan(lfs.currentdir() .. '/doc') -- Lua stdlib
 	end
 	message = read()
