@@ -369,13 +369,13 @@ function Server.new(lang, root, cmd, init_options)
 				--	prepareSupportDefaultBehavior = 1,
 				--	honorsChangeAnnotations = true
 				-- },
-				publishDiagnostics = {
-					relatedInformation = false -- some buggy language servers expect this key
-					--	tagSupport = {valueSet = {}},
-					--	versionSupport = true,
-					--	codeDescriptionSupport = true,
-					--	dataSupport = true
-				}
+				publishDiagnostics = empty_object -- {
+				--	relatedInformation = true
+				--	tagSupport = {valueSet = {}},
+				--	versionSupport = true,
+				--	codeDescriptionSupport = true,
+				--	dataSupport = true
+				-- },
 				-- foldingRange = {
 				--	dynamicRegistration = false, -- not supported
 				--	rangeLimit = ?,
