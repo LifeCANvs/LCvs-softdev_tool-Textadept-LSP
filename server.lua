@@ -218,6 +218,10 @@ local function scan(target)
 end
 
 local _HOME = os.getenv('TEXTADEPT_HOME') or (arg[-2] and arg[-2]:match('^(.+)[/\\]'))
+if _HOME:find('/MacOS$') then
+	local p<close> = io.popen(string.format('realpath "%s/../Resources"', _HOME))
+	_HOME = p:read()
+end
 local scanned_textadept = false
 -- LSP textDocument/didOpen notification.
 register('textDocument/didOpen', function(params)
