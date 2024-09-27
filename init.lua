@@ -1298,20 +1298,24 @@ for i = 1, #m_tools - 1 do
 						local buffer, view = buffer, view
 						if ui.command_entry.active then
 							_G.buffer, _G.view = ui.command_entry, ui.command_entry
-							if _G.buffer.lexer_language == 'lua' then
-								ui.statusbar_text = _L['Loading Textadept documentation...']
-								ui.update()
-								M.start()
-							end
-							local server = get_server()
-							if server then
-								-- Notify the server with a dummy file. The server will detect and scan _HOME
-								-- if it hasn't already.
-								server:notify('textDocument/didOpen', {
-									textDocument = {
-										uri = touri(_HOME .. '/dummy.lua'), languageId = 'lua', version = 0, text = ''
-									}
-								})
+							if _G.buffer.lexer_language == 'lua' and M.server_commands.lua:find('[tT]extadept') then
+								local server = get_server()
+								if not server then
+									ui.statusbar_text = _L['Loading Textadept documentation...']
+									ui.update() -- update statusbar
+									M.start()
+									server = get_server()
+								end
+								if server then
+									-- Notify the server with a dummy file. The server will detect and scan _HOME
+									-- if it hasn't already.
+									server:notify('textDocument/didOpen', {
+										textDocument = {
+											uri = touri(_HOME .. '/dummy.lua'), languageId = 'lua', version = 0, text = ''
+										}
+									})
+								end
+								ui.statusbar_text = ''
 							end
 						end
 						local cycle = _G.view:call_tip_active()
