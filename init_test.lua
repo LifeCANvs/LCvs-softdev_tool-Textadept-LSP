@@ -251,6 +251,25 @@ end)
 expected_failure('clangd does not support this yet')
 if not have_clangd then skip('clangd is not available') end
 
+test('lsp.code_action should pop up actions for selected text like an identifier', function()
+	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
+	local dir<close> = test.tmpdir(clangd_project)
+	io.open_file(dir / 'main.cpp')
+	lsp.start()
+	buffer:goto_pos(buffer:find_column(6, 25))
+	textadept.editing.select_word() -- bar
+
+	local user_list_show = test.stub()
+	local _<close> = test.mock(buffer, 'user_list_show', user_list_show)
+
+	lsp.code_action()
+
+	test.assert_equal(buffer:get_sel_text(), 'bar')
+	test.assert_equal(user_list_show.called, true)
+	test.assert_equal(user_list_show.args[3], 'Extract subexpression to variable')
+end)
+if not have_clangd then skip('clangd is not available') end
+
 test('typing should trigger lsp.autocomplete', function()
 	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
 	local dir<close> = test.tmpdir(clangd_project)
@@ -324,6 +343,29 @@ test("typing ')' should cancel signature help", function()
 	test.type('()')
 
 	test.assert_equal(call_tip_cancel.called, true)
+end)
+if not have_clangd then skip('clangd is not available') end
+
+test('clicking on a diagnostic and selecting a code action (if any) should run it', function()
+	local _<close> = test.mock(lsp, 'server_commands', {cpp = 'clangd'})
+	local dir<close> = test.tmpdir(clangd_project)
+	io.open_file(dir / 'main.cpp')
+	local orig_text = buffer:get_text()
+	lsp.start()
+
+	local _<close> = test.mock(buffer, 'auto_c_show', test.stub())
+	local user_list_show = test.stub()
+	local _<close> = test.mock(buffer, 'user_list_show', user_list_show)
+
+	local pos = buffer:position_from_line(3)
+	buffer:goto_pos(pos)
+	test.type('#include <iostream>\n')
+	test.wait(function() return buffer:indicator_all_on_for(pos) > 0 end)
+	-- Simulate click and selection.
+	events.emit(events.INDICATOR_CLICK, pos)
+	events.emit(events.USER_LIST_SELECTION, lsp.CODE_ACTION_ID, 'remove #include directive')
+
+	test.wait(function() return buffer:get_text() == orig_text end)
 end)
 if not have_clangd then skip('clangd is not available') end
 

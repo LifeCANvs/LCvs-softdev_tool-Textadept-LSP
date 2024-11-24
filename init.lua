@@ -105,6 +105,7 @@ if not rawget(_L, 'Language Server') then
 	_L['Find References'] = 'Find _References'
 	_L['Select Around'] = 'Select Aro_und'
 	_L['Select All Symbol'] = 'Select Al_l Symbol'
+	_L['Code Action'] = 'Code Action'
 	_L['Toggle Show Diagnostics'] = 'Toggle Show Diag_nostics'
 	_L['Show Log'] = 'Show L_og'
 	_L['Clear Log'] = 'Cl_ear Log'
@@ -177,6 +178,8 @@ M.show_all_diagnostics = false
 -- The default value is `nil`, which disables this feature. A value greater than or equal to
 -- 3 is recommended to enable this feature.
 M.autocomplete_num_chars = nil
+--- The code action user list number.
+M.CODE_ACTION_ID = view.new_user_list_type()
 
 --- Map of lexer names to LSP language server commands or configurations, or functions that
 -- return either a server command or a configuration.
@@ -281,148 +284,197 @@ function Server.new(lang, root, cmd, init_options)
 			nil, --
 		initializationOptions = init_options, --
 		capabilities = {
-			-- workspace = nil, -- workspaces are not supported at all
+			workspace = {
+				applyEdit = true, --
+				workspaceEdit = {
+					-- documentChanges = false,
+					-- resourceOperations = {},
+					failureHandling = 'undo'
+					-- normalizesLineEndings=false,
+					-- changeAnnotationSupport = {groupsOnLabel = false}
+				},
+				-- didChangeConfiguration = {dynamicRegistration = false},
+				-- didChangeWatchedFiles = {
+				-- 	dynamicRegistration = false,
+				-- 	relativePatternSupport = false,
+				-- },
+				-- symbol = {
+				-- 	dynamicRegistration = false,
+				-- 	symbolKind = {valueSet = {}},
+				-- 	tagSupport = {valueSet = {}},
+				-- 	resolveSupport = {properties = {}}
+				-- },
+				executeCommand = empty_object -- {dynamicRegistration = false},
+				-- workspaceFolders = false,
+				-- configuration = false,
+				-- semanticTokens = {refreshSupport = false},
+				-- codeLens = {refreshSupport = false},
+				-- fileOperations = {
+				-- 	dynamicRegistration = false,
+				-- 	didCreate = false,
+				-- 	willCreate = false,
+				-- 	didRename = false,
+				-- 	willRename = false,
+				-- 	didDelete = false,
+				-- 	willDelete = false
+				-- },
+				-- inlineValue = {refreshSupport = false},
+				-- inlayHint = {refreshSupport = false},
+				-- diagnostics = {refreshSupport = false}
+			}, --
 			textDocument = {
 				synchronization = {
-					-- willSave = true,
-					-- willSaveWaitUntil = true,
+					-- willSave = false,
+					-- willSaveWaitUntil = false,
 					didSave = true
 				}, --
 				completion = {
-					-- dynamicRegistration = false, -- not supported
+					-- dynamicRegistration = false,
 					completionItem = {
 						snippetSupport = M.snippet_completions,
-						-- commitCharactersSupport = true,
+						-- commitCharactersSupport = false,
 						documentationFormat = {'plaintext'},
-						-- deprecatedSupport = false, -- simple autocompletion list
+						-- deprecatedSupport = false,
 						preselectSupport = true
 						-- tagSupport = {valueSet = {}},
-						-- insertReplaceSupport = true,
+						-- insertReplaceSupport = false,
 						-- resolveSupport = {properties = {}},
 						-- insertTextModeSupport = {valueSet = {}},
-						-- labelDetailsSupport = true
+						-- labelDetailsSupport = false
 					}, --
 					completionItemKind = {valueSet = completion_item_kind_set}
-					-- contextSupport = true,
+					-- contextSupport = false,
 					-- insertTextMode = 1,
-					-- completionList = {}
+					-- completionList = {itemDefaults = {}}
 				}, --
 				hover = {
-					-- dynamicRegistration = false, -- not supported
+					-- dynamicRegistration = false,
 					contentFormat = {'plaintext'}
 				}, --
 				signatureHelp = {
-					-- dynamicRegistration = false, -- not supported
+					-- dynamicRegistration = false,
 					signatureInformation = {
 						documentationFormat = {'plaintext'}, --
 						parameterInformation = {labelOffsetSupport = true}, --
 						activeParameterSupport = true
 					} --
-					-- contextSupport = true
+					-- contextSupport = false
 				},
 				-- declaration = {
-				--	dynamicRegistration = false, -- not supported
-				--	linkSupport = true
+				--		dynamicRegistration = false,
+				--		linkSupport = false
 				-- }
 				-- definition = {
-				--	dynamicRegistration = false, -- not supported
-				--	linkSupport = true
+				--		dynamicRegistration = false,
+				--		linkSupport = false
 				-- },
 				-- typeDefinition = {
-				--	dynamicRegistration = false, -- not supported
-				--	linkSupport = true
+				--		dynamicRegistration = false,
+				--		linkSupport = false
 				-- },
 				-- implementation = {
-				--	dynamicRegistration = false, -- not supported
-				--	linkSupport = true
+				--		dynamicRegistration = false,
+				--		linkSupport = false
 				-- },
-				-- references = {dynamicRegistration = false}, -- not supported
-				-- documentHighlight = {dynamicRegistration = false}, -- not supported
+				-- references = {dynamicRegistration = false},
+				-- documentHighlight = {dynamicRegistration = false},
 				documentSymbol = {
-					-- dynamicRegistration = false, -- not supported
+					-- dynamicRegistration = false,
 					symbolKind = {valueSet = symbol_kind_set}
-					-- hierarchicalDocumentSymbolSupport = true,
+					-- hierarchicalDocumentSymbolSupport = false,
 					-- tagSupport = {valueSet = {}},
-					-- labelSupport = true
+					-- labelSupport = false
 				}, --
-				-- codeAction = {
-				--	dynamicRegistration = false, -- not supported
-				--	codeActionLiteralSupport = {valueSet = {}},
-				--	isPreferredSupport = true,
-				--	disabledSupport = true,
-				--	dataSupport = true,
-				--	resolveSupport = {properties = {}},
-				--	honorsChangeAnnotations = true
-				-- },
-				-- codeLens = {dynamicRegistration = false}, -- not supported
+				codeAction = {
+					--	dynamicRegistration = false,
+					codeActionLiteralSupport = {
+						codeActionKind = {
+							valueSet = {
+								'', 'quickfix', 'refactor', 'refactor.extract', 'refactor.inline',
+								'refactor.rewrite', 'source', 'source.organizeImports', 'source.fixAll'
+							}
+						}
+					}
+					--	isPreferredSupport = false,
+					--	disabledSupport = false,
+					--	dataSupport = false,
+					--	resolveSupport = {properties = {}},
+					--	honorsChangeAnnotations = false
+				},
+				-- codeLens = {dynamicRegistration = false},
 				-- documentLink = {
-				--	dynamicRegistration = false, -- not supported
-				--	tooltipSupport = true
+				--		dynamicRegistration = false,
+				--		tooltipSupport = false
 				-- },
-				-- colorProvider = {dynamicRegistration = false}, -- not supported
-				-- formatting = {dynamicRegistration = false}, -- not supported
-				-- rangeFormatting = {dynamicRegistration = false}, -- not supported
-				-- onTypeFormatting = {dynamicRegistration = false}, -- not supported
+				-- colorProvider = {dynamicRegistration = false},
+				-- formatting = {dynamicRegistration = false},
+				-- rangeFormatting = {dynamicRegistration = false},
+				-- onTypeFormatting = {dynamicRegistration = false},
 				-- rename = {
-				--	dynamicRegistration = false, -- not supported
-				--	prepareSupport = false,
-				--	prepareSupportDefaultBehavior = 1,
-				--	honorsChangeAnnotations = true
+				--		dynamicRegistration = false,
+				--		prepareSupport = false,
+				--		prepareSupportDefaultBehavior = 1,
+				--		honorsChangeAnnotations = false
 				-- },
 				publishDiagnostics = empty_object -- {
-				--	relatedInformation = true
-				--	tagSupport = {valueSet = {}},
-				--	versionSupport = true,
-				--	codeDescriptionSupport = true,
-				--	dataSupport = true
+				--		relatedInformation = false
+				--		tagSupport = {valueSet = {}},
+				--		versionSupport = false,
+				--		codeDescriptionSupport = false,
+				--		dataSupport = false
 				-- },
 				-- foldingRange = {
-				--	dynamicRegistration = false, -- not supported
-				--	rangeLimit = ?,
-				--	lineFoldingOnly = true,
-				--	foldingRangeKind = {valueSet = {'comment', 'imports', 'region'}},
-				--	foldingRange = {collapsedText = true}
+				--		dynamicRegistration = false,
+				--		rangeLimit = 0,
+				--		lineFoldingOnly = false,
+				--		foldingRangeKind = {valueSet = {}},
+				--		foldingRange = {collapsedText = false}
 				-- },
-				-- selectionRange = {dynamicRegistration = false}, -- not supported
-				-- linkedEditingRange = {dynamicRegistration = false}, -- not supported
-				-- callHierarchy = {dynamicRegistration = false}, -- not supported
+				-- selectionRange = {dynamicRegistration = false},
+				-- linkedEditingRange = {dynamicRegistration = false},
+				-- callHierarchy = {dynamicRegistration = false},
 				-- semanticTokens = {
-				--	dynamicRegistration = false, -- not supported
-				--	requests = {},
-				--	tokenTypes = {},
-				--	tokenModifiers = {},
-				--	formats = {},
-				--	overlappingTokenSupport = true,
-				--	multilineTokenSupport = true,
-				--	serverCancelSupport = true,
-				--	augmentsSyntaxTokens = true
+				--		dynamicRegistration = false,
+				--		requests = {range = false, full = false},
+				--		tokenTypes = {},
+				--		tokenModifiers = {},
+				--		formats = {},
+				--		overlappingTokenSupport = false,
+				--		multilineTokenSupport = false,
+				--		serverCancelSupport = false,
+				--		augmentsSyntaxTokens = false
 				-- },
-				-- moniker = {dynamicRegistration = false}, -- not supported
-				-- typeHierarchy = {dynamicRegistration = false}, -- not supported
-				-- inlineValue = {dynamicRegistration = false}, -- not supported
+				-- moniker = {dynamicRegistration = false},
+				-- typeHierarchy = {dynamicRegistration = false},
+				-- inlineValue = {dynamicRegistration = false},
 				-- inlayHint = {
-				--	dynamicRegistration = false, -- not supported
-				--	resolveSupport = {properties = {}}
+				--		dynamicRegistration = false,
+				--		resolveSupport = {properties = {}}
 				-- },
 				-- diagnostic = {
-				--	dynamicRegistration = false, -- not supported
-				--	relatedDocumentSupport = true
+				--		dynamicRegistration = false,
+				--		relatedDocumentSupport = false
 				-- }
 			} --
-			-- notebookDocument = nil, -- notebook documents are not supported at all
+			-- notebookDocument = {
+			-- 	synchronization = {
+			-- 		dynamicRegistration = false,
+			-- 		executionSummarySupport = false
+			-- 	}
+			-- },
 			-- window = {
-			--	workDoneProgress = true,
-			--	showMessage = {messageActionItem = {additionalPropertiesSupport = true}},
-			--	showDocument = {support = true}
+			--		workDoneProgress = true,
+			--		showMessage = {messageActionItem = {additionalPropertiesSupport = false}},
+			--		showDocument = {support = false}
 			-- },
 			-- general = {
-			--	staleRequestSupport = {
-			--		cancel = true,
-			--		retryOnContentModified = {}
-			--	},
-			--	regularExpressions = {},
-			--	markdown = {},
-			--	positionEncodings = 'utf-8'
+			--		staleRequestSupport = {
+			--			cancel = false,
+			--			retryOnContentModified = {}
+			--		},
+			--		regularExpressions = {engine = 'ECMAScript', version = 'ES2020'},
+			--		markdown = {parser = 'marked', version = '1.1.0', allowedTags = {}},
+			--		positionEncodings = {'utf-16'}
 			-- },
 			-- experimental = nil
 		}
@@ -598,6 +650,11 @@ local function tobufferrange(range)
 	return s, e
 end
 
+--- Active diagnostics
+-- @table diagnostics
+-- @local
+local diagnostics
+
 --- Handles an unsolicited notification from this language server.
 -- @param method String method name of the notification.
 -- @param params Table of parameters for the notification.
@@ -626,7 +683,8 @@ function Server:handle_notification(method, params)
 		end
 		buffer:annotation_clear_all()
 		-- Add diagnostics.
-		for _, diagnostic in ipairs(params.diagnostics) do
+		diagnostics = params.diagnostics
+		for _, diagnostic in ipairs(diagnostics) do
 			buffer.indicator_current = (not diagnostic.severity or diagnostic.severity == 1) and
 				textadept.run.INDIC_ERROR or textadept.run.INDIC_WARNING -- TODO: diagnostic.tags
 			local s, e = tobufferrange(diagnostic.range)
@@ -638,7 +696,7 @@ function Server:handle_notification(method, params)
 				-- TODO: diagnostics should be persistent in projects.
 			end
 		end
-		if #params.diagnostics > 0 then buffer._lsp_diagnostic_time = os.time() end
+		if #diagnostics > 0 then buffer._lsp_diagnostic_time = os.time() end
 		-- Restore line scroll state.
 		local lines_from_top = view:visible_from_doc_line(current_line) - view.first_visible_line
 		view:line_scroll(0, lines_from_top - orig_lines_from_top)
@@ -647,6 +705,42 @@ function Server:handle_notification(method, params)
 	elseif not events.emit(events.LSP_NOTIFICATION, self.lang, self, method, params) then
 		-- Unknown notification.
 		log('Unexpected notification: ', method)
+	end
+end
+
+--- Returns the buffer the given URI belongs to.
+-- @param uri URI to lookup.
+local function buffer_from_uri(uri)
+	for _, buffer in ipairs(_BUFFERS) do if buffer.filename == tofilename(uri) then return buffer end end
+	return nil
+end
+
+--- Applies the given workspace edit.
+-- @param edit Workspace edit.
+local function apply_edit(edit)
+	local changes = edit.changes
+	if not changes then
+		-- Some LSP servers do not respect this client's lack of support for documentChanges and
+		-- workspace resourceOperations. As a result, they send documentChanges instead of changes.
+		-- Transform it.
+		-- Note: file operations (create/rename/delete) are not supported and will silently fail.
+		changes = {}
+		for _, change in ipairs(edit.documentChanges) do
+			if change.textDocument then changes[change.textDocument] = change.edits end
+		end
+	end
+	for doc, changes in pairs(changes) do
+		local buffer = buffer_from_uri(doc)
+		buffer:begin_undo_action()
+		for i, change in ipairs(changes) do
+			buffer[i == 1 and 'set_selection' or 'add_selection'](tobufferrange(change.range))
+		end
+		for i = 1, buffer.selections do
+			buffer:set_target_range(buffer.selection_n_start[i], buffer.selection_n_end[i])
+			buffer:replace_target(changes[i].newText)
+		end
+		buffer:end_undo_action()
+		buffer:set_selection(buffer.target_start, buffer.target_end)
 	end
 end
 
@@ -665,6 +759,10 @@ function Server:handle_request(id, method, params)
 		local result = {title = params.actions[ui.dialogs.message(dialog_options)]}
 		if not result.title then result = json.null end
 		self:respond(id, result)
+	elseif method == 'workspace/applyEdit' then
+		local ok, errmsg = xpcall(apply_edit, debug.traceback, params.edit)
+		self:respond(id, {applied = ok})
+		if not ok then error(errmsg) end
 	elseif not events.emit(events.LSP_REQUEST, self.lang, self, id, method, params) then
 		-- Unknown notification.
 		log('Responding with null to server request: ', method)
@@ -1136,6 +1234,52 @@ function M.select_all_symbol()
 	for i = 2, #ranges do buffer:add_selection(tobufferrange(ranges[i])) end
 end
 
+--- Active code actions.
+-- @table actions
+-- @local
+local actions
+
+--- Requests a list of code actions for the given range (or the current selection/line) and
+-- prompts the user with a user list to select from.
+-- @param s Optional start position of the code action range. If omitted, the start of the
+--	current selection is used, or the start of the line if no text is selected.
+-- @param e Optional end position of the code action range. If omitted, the end of the current
+--	selection is used, or the end of the line if no text is selected.
+function M.code_action(s, e)
+	local server = get_server()
+	if not (server and buffer.filename and server.capabilities.codeActionProvider) then return end
+	if not s or not e then
+		server:sync_buffer()
+		if buffer.selection_empty then
+			local line = buffer:line_from_position(buffer.current_pos)
+			s, e = buffer:position_from_line(line), buffer.line_end_position[line]
+		else
+			s, e = buffer.selection_start, buffer.selection_end
+		end
+	end
+	local s_line, e_line = buffer:line_from_position(s), buffer:line_from_position(e)
+	local diagnostics_in_range = {}
+	for _, diagnostic in ipairs(diagnostics or {}) do
+		if diagnostic.range['end'].line < s_line - 1 then goto continue end
+		if diagnostic.range.start.line > e_line - 1 then goto continue end
+		diagnostics_in_range[#diagnostics_in_range + 1] = diagnostic
+		::continue::
+	end
+	actions = server:request('textDocument/codeAction', {
+		textDocument = {uri = touri(buffer.filename)}, --
+		range = {
+			start = {line = s_line - 1, character = s - buffer:position_from_line(s_line)},
+			['end'] = {line = e_line - 1, character = e - buffer:position_from_line(e_line)}
+		}, --
+		context = {diagnostics = diagnostics_in_range, triggerKind = 1}
+	})
+	if #actions == 0 then return end
+	local list = {}
+	for _, action in ipairs(actions) do list[#list + 1] = action.title end
+	buffer.auto_c_separator = string.byte('\n')
+	buffer:user_list_show(M.CODE_ACTION_ID, table.concat(list, '\n'))
+end
+
 -- Setup events to automatically start language servers and notify them as files are opened.
 -- Connect to `events.FILE_OPENED` after initialization in order to not overwhelm LSP
 -- connection when loading a session on startup. Connect to `events.BUFFER_AFTER_SWITCH` and
@@ -1209,9 +1353,35 @@ end)
 -- Query the language server for hover information when mousing over identifiers.
 events.connect(events.DWELL_START, function(position)
 	if position == 0 then return end -- Qt on Windows repeatedly sends this for some reason.
-	if get_server() and M.show_hover then M.hover(position) end
+	if get_server() and M.show_hover and not buffer:auto_c_active() then M.hover(position) end
 end)
 events.connect(events.DWELL_END, function() if get_server() then view:call_tip_cancel() end end)
+
+-- Shows a code action list (if any) for the clicked diagnostic message.
+events.connect(events.INDICATOR_CLICK, function(pos)
+	for _, indic in ipairs{textadept.run.INDIC_ERROR, textadept.run.INDIC_WARNING} do
+		if buffer:indicator_all_on_for(pos) & 1 << indic - 1 == 0 then goto continue end
+		buffer:goto_pos(pos)
+		M.code_action(buffer:indicator_start(indic, pos), buffer:indicator_end(indic, pos))
+		break
+		::continue::
+	end
+end)
+
+-- Performs the selected code action.
+events.connect(events.USER_LIST_SELECTION, function(id, text)
+	if id ~= M.CODE_ACTION_ID then return end
+	for _, action in ipairs(actions) do
+		if action.title ~= text then goto continue end
+		if action.edit then apply_edit(action.edit) end
+		if action.command then
+			get_server():request('workspace/executeCommand',
+				{command = action.command.command, arguments = action.command.arguments})
+		end
+		break
+		::continue::
+	end
+end)
 
 --- Gracefully shut down servers on reset or quit.
 local function shutdown_servers()
@@ -1333,6 +1503,7 @@ for i = 1, #m_tools - 1 do
 				{_L['Find References'], M.find_references}, --
 				{_L['Select Around'], M.select}, --
 				{_L['Select All Symbol'], M.select_all_symbol}, --
+				{_L['Code Action'], M.code_action}, --
 				{''}, {
 					_L['Toggle Show Diagnostics'], function()
 						M.show_diagnostics = not M.show_diagnostics
@@ -1363,6 +1534,10 @@ for i = 1, #m_tools - 1 do
 		end
 	end
 end
+
+-- Add to context menu.
+table.insert(textadept.menu.context_menu, {''})
+table.insert(textadept.menu.context_menu, {_L['Code Action'], M.code_action})
 
 keys['ctrl+ '] = M.autocomplete
 if OSX then keys['cmd+ '] = M.autocomplete end
