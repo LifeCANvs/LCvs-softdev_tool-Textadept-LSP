@@ -70,6 +70,11 @@ F12 | F12 | F12 | Go To Definition
 
 ## Fields defined by `lsp`
 
+<a id="lsp.CODE_ACTION_ID"></a>
+### `lsp.CODE_ACTION_ID` 
+
+The code action user list number.
+
 <a id="events.LSP_INITIALIZED"></a>
 ### `events.LSP_INITIALIZED` 
 
@@ -186,6 +191,19 @@ Autocompleter function for a language server.
 ### `lsp.autocomplete`()
 
 Requests autocompletion at the current position, returning `true` on success.
+
+<a id="lsp.code_action"></a>
+### `lsp.code_action`(*s*, *e*)
+
+Requests a list of code actions for the given range (or the current selection/line) and
+prompts the user with a user list to select from.
+
+Parameters:
+
+- *s*:  Optional start position of the code action range. If omitted, the start of the
+	current selection is used, or the start of the line if no text is selected.
+- *e*:  Optional end position of the code action range. If omitted, the end of the current
+	selection is used, or the end of the line if no text is selected.
 
 <a id="lsp.find_references"></a>
 ### `lsp.find_references`()

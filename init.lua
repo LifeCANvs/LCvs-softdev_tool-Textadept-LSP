@@ -651,9 +651,7 @@ local function tobufferrange(range)
 end
 
 --- Active diagnostics
--- @table diagnostics
--- @local
-local diagnostics
+local diagnostics = {}
 
 --- Handles an unsolicited notification from this language server.
 -- @param method String method name of the notification.
@@ -1235,9 +1233,7 @@ function M.select_all_symbol()
 end
 
 --- Active code actions.
--- @table actions
--- @local
-local actions
+local actions = {}
 
 --- Requests a list of code actions for the given range (or the current selection/line) and
 -- prompts the user with a user list to select from.
@@ -1259,7 +1255,7 @@ function M.code_action(s, e)
 	end
 	local s_line, e_line = buffer:line_from_position(s), buffer:line_from_position(e)
 	local diagnostics_in_range = {}
-	for _, diagnostic in ipairs(diagnostics or {}) do
+	for _, diagnostic in ipairs(diagnostics) do
 		if diagnostic.range['end'].line < s_line - 1 then goto continue end
 		if diagnostic.range.start.line > e_line - 1 then goto continue end
 		diagnostics_in_range[#diagnostics_in_range + 1] = diagnostic
