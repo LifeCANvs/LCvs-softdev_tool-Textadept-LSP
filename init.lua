@@ -455,18 +455,18 @@ function Server.new(lang, root, cmd, init_options)
 				--		dynamicRegistration = false,
 				--		relatedDocumentSupport = false
 				-- }
-			} --
+			}, --
 			-- notebookDocument = {
 			-- 	synchronization = {
 			-- 		dynamicRegistration = false,
 			-- 		executionSummarySupport = false
 			-- 	}
 			-- },
-			-- window = {
-			--		workDoneProgress = true,
-			--		showMessage = {messageActionItem = {additionalPropertiesSupport = false}},
-			--		showDocument = {support = false}
-			-- },
+			window = {
+				--		workDoneProgress = true,
+				--		showMessage = {messageActionItem = {additionalPropertiesSupport = false}},
+				showDocument = {support = true}
+			}
 			-- general = {
 			--		staleRequestSupport = {
 			--			cancel = false,
@@ -721,14 +721,21 @@ local function apply_edit(edit)
 		-- Some LSP servers do not respect this client's lack of support for documentChanges and
 		-- workspace resourceOperations. As a result, they send documentChanges instead of changes.
 		-- Transform it.
-		-- Note: file operations (create/rename/delete) are not supported and will silently fail.
 		changes = {}
 		for _, change in ipairs(edit.documentChanges) do
-			if change.textDocument then changes[change.textDocument] = change.edits end
+			-- TODO: support create/rename/delete.
+			if not change.textDocument then error(change.kind .. ' not supported') end
+			changes[change.textDocument.uri] = change.edits
 		end
 	end
 	for doc, changes in pairs(changes) do
 		local buffer = buffer_from_uri(doc)
+		local line, column, first_visible_line
+		if buffer == _G.buffer then
+			local pos = buffer.selection_start
+			line, column = buffer:line_from_position(pos), buffer.column[pos]
+			first_visible_line = view.first_visible_line
+		end
 		buffer:begin_undo_action()
 		for i, change in ipairs(changes) do
 			buffer[i == 1 and 'set_selection' or 'add_selection'](tobufferrange(change.range))
@@ -738,7 +745,10 @@ local function apply_edit(edit)
 			buffer:replace_target(changes[i].newText)
 		end
 		buffer:end_undo_action()
-		buffer:set_selection(buffer.target_start, buffer.target_end)
+		if buffer == _G.buffer then
+			buffer:set_empty_selection(buffer:find_column(line, column))
+			view.first_visible_line = first_visible_line
+		end
 	end
 end
 
@@ -761,6 +771,14 @@ function Server:handle_request(id, method, params)
 		local ok, errmsg = xpcall(apply_edit, debug.traceback, params.edit)
 		self:respond(id, {applied = ok})
 		if not ok then error(errmsg) end
+	elseif method == 'window/showDocument' then
+		self:respond(id, {success = true})
+		if not params.external then
+			io.open_file(tofilename(params.uri))
+		else
+			local cmd = (WIN32 and 'start ""') or (OSX and 'open') or 'xdg-open'
+			os.spawn(string.format('%s "%s"', cmd, params.uri))
+		end
 	elseif not events.emit(events.LSP_REQUEST, self.lang, self, id, method, params) then
 		-- Unknown notification.
 		log('Responding with null to server request: ', method)
@@ -1271,7 +1289,17 @@ function M.code_action(s, e)
 	})
 	if #actions == 0 then return end
 	local list = {}
-	for _, action in ipairs(actions) do list[#list + 1] = action.title end
+	for _, action in ipairs(actions) do
+		local xpm = 0
+		if action.kind:find('^quickfix') then
+			xpm = textadept.editing.XPM_IMAGES.VARIABLE
+		elseif action.kind:find('^refactor') then
+			xpm = textadept.editing.XPM_IMAGES.STRUCT
+		elseif action.kind:find('^source') then
+			xpm = textadept.editing.XPM_IMAGES.NAMESPACE
+		end
+		list[#list + 1] = string.format('%s?%d', action.title, xpm) -- TODO: auto_c_type_separator
+	end
 	buffer.auto_c_separator = string.byte('\n')
 	buffer:user_list_show(M.CODE_ACTION_ID, table.concat(list, '\n'))
 end
