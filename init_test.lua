@@ -7,6 +7,7 @@ teardown(function()
 	lsp.stop()
 	textadept.menu.menubar['Tools/Language Server/Show Log'][2]()
 	if buffer._type == '[LSP]' then test.log('lsp log:\n\t', buffer:get_text():gsub('\n', '\n\t')) end
+	textadept.menu.menubar['Tools/Language Server/Clear Log'][2]()
 end)
 
 local have_clangd = LINUX or OSX and not os.getenv('CI')
